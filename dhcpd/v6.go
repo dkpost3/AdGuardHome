@@ -25,6 +25,8 @@ type v6Server struct {
 	ipAddrs    [256]byte
 	sid        dhcpv6.Duid
 
+	ra raCtx // RA module
+
 	conf V6ServerConf
 }
 
@@ -594,10 +596,31 @@ func (s *v6Server) Start() error {
 		return err
 	}
 
+	s.ra.ipAddr = s.conf.dnsIPAddrs[0]
+	for _, ip := range s.conf.dnsIPAddrs {
+		if ip.IsLinkLocalUnicast() {
+			s.ra.ipAddr = ip
+			break
+		}
+	}
+
+	s.ra.raAllowSlaac = s.conf.RaAllowSlaac
+	s.ra.raSlaacOnly = s.conf.RaSlaacOnly
+	s.ra.dnsIPAddr = s.ra.ipAddr
+	s.ra.prefixIPAddr = s.conf.ipStart
+	s.ra.ifaceName = s.conf.InterfaceName
+	s.ra.iface = iface
+	s.ra.packetSendPeriod = 1 * time.Second
+	err = s.ra.Init()
+	if err != nil {
+		return err
+	}
+
 	go func() {
 		err = s.srv.Serve()
 		log.Debug("DHCPv6: srv.Serve: %s", err)
 	}()
+
 	return nil
 }
 
@@ -614,6 +637,8 @@ func (s *v6Server) Stop() {
 	}
 	// now server.Serve() will return
 	s.srv = nil
+
+	s.ra.Close()
 }
 
 // Create DHCPv6 server
@@ -626,7 +651,7 @@ func v6Create(conf V6ServerConf) (DHCPServer, error) {
 	}
 
 	s.conf.ipStart = net.ParseIP(conf.RangeStart)
-	if s.conf.ipStart == nil {
+	if s.conf.ipStart == nil || s.conf.ipStart.To16() == nil {
 		return s, fmt.Errorf("DHCPv6: invalid range-start IP: %s", conf.RangeStart)
 	}
 
