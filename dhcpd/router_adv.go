@@ -151,12 +151,11 @@ func createICMPv6RAPacket(params icmpv6RA) []byte {
 	binary.BigEndian.PutUint32(data[i:], 3600) // Lifetime[4]
 	i += 4
 	copy(data[i:], params.recursiveDNSServer) // Addresses of IPv6 Recursive DNS Servers[16]
-	i += 16
 
 	return data
 }
 
-// Init - initalize RA module
+// Init - initialize RA module
 func (ra *raCtx) Init() error {
 	ra.stop.Store(0)
 	ra.conn = nil
