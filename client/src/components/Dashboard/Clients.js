@@ -9,9 +9,7 @@ import Card from '../ui/Card';
 import Cell from '../ui/Cell';
 
 import { getPercent, sortIp } from '../../helpers/helpers';
-import {
-    BLOCK_ACTIONS, STATUS_COLORS,
-} from '../../helpers/constants';
+import { BLOCK_ACTIONS, STATUS_COLORS } from '../../helpers/constants';
 import { toggleClientBlock } from '../../actions/access';
 import { renderFormattedClientCell } from '../../helpers/renderFormattedClientCell';
 import { getStats } from '../../actions/stats';
